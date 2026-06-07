@@ -1,0 +1,62 @@
+/*
+ * Desk-Idoll renderer global styles
+ *
+ * Core goals:
+ * 1. Fully transparent background - Electron transparent window depends on this
+ * 2. Canvas fills the entire window - PixiJS render area equals window size
+ * 3. Disable all default interactions - mouse events handled separately by PixiJS/InputHandler
+ */
+
+/* --- Reset --- */
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* --- Body: transparent background + fullscreen --- */
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: transparent;
+  /* Ensure Electron transparent window works on all Windows versions */
+  background: transparent;
+}
+
+/* --- Canvas: fill window + no margin --- */
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* PixiJS inline width/height will override this, but keep as fallback */
+}
+
+/* --- Disable text selection --- */
+
+body {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* --- Disable drag (prevent Electron default drag behavior interference) --- */
+
+img,
+canvas {
+  -webkit-user-drag: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+/*
+ * Note: canvas pointer-events is set to none because
+ * PixiJS manages interactions on top of the canvas.
+ * InputHandler captures mouse events through PixiJS's event system (FederatedPointerEvent),
+ * and does not need DOM-level pointer-events.
+ *
+ * If PixiJS events stop working later, change this to pointer-events: auto.
+ */

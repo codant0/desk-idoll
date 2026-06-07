@@ -1,0 +1,70 @@
+appId: com.codant0.desk-idoll
+productName: Desk-Idoll
+copyright: Copyright (c) 2026 codant0
+asar: true
+asarUnpack:
+  - "resources/**"
+
+directories:
+  output: release
+  buildResources: resources
+
+files:
+  - out/**/*
+  - "!**/node_modules/**/{CHANGELOG.md,README.md,readme.md,LICENSE,license,LICENCE}"
+  - "!**/node_modules/**/{test,tests,powered-test,example,examples}"
+  - "!**/node_modules/**/.bin"
+  - "!**/*.map"
+  - "!**/*.d.ts"
+
+extraResources:
+  - from: "src/assets/default-pet/"
+    to: "default-pet/"
+    filter:
+      - "**/*"
+  - from: "src/assets/tray-icon.png"
+    to: "tray-icon.png"
+
+icon: resources/icon.ico
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  icon: resources/icon.ico
+  artifactName: "${productName}-Setup-${version}.${ext}"
+  requestedExecutionLevel: asInvoker
+
+portable:
+  artifactName: "${productName}-${version}-portable.${ext}"
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  installerIcon: resources/icon.ico
+  uninstallerIcon: resources/icon.ico
+  installerHeaderIcon: resources/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: "Desk-Idoll"
+  menuCategory: true
+  deleteAppDataOnUninstall: false
+  runAfterFinish: true
+  uninstallDisplayName: "Desk-Idoll"
+  uninstallDisplayAppDescription: true
+  language: 2052
+  installerLanguages:
+    - 2052
+    - 1033
+
+publish:
+  provider: github
+  owner: codant0
+  repo: desk-idoll
+  releaseType: release
