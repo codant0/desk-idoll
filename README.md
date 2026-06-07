@@ -65,8 +65,12 @@ src/
 │   └── index.ts              # contextBridge → window.electronAPI
 ├── renderer/
 │   ├── index.html            # Pet window entry
+│   ├── public/
+│   │   └── live2dcubismcore.min.js  # Live2D Cubism SDK runtime
+│   ├── styles/main.css       # Pet window CSS
 │   ├── src/
 │   │   ├── main.ts           # Renderer init, wires all subsystems
+│   │   ├── styles/main.css   # Pet window detailed CSS
 │   │   ├── engine/
 │   │   │   ├── render-engine.ts  # PixiJS Application facade
 │   │   │   ├── adapter.ts        # RenderAdapter interface + factory
@@ -79,6 +83,7 @@ src/
 │   └── config/
 │       ├── index.html        # Config window entry
 │       ├── main.ts           # ConfigApp: sidebar + tabs
+│       ├── styles/config.css # Config window design system
 │       └── components/
 │           ├── PetListPanel.ts
 │           ├── SettingsPanel.ts
@@ -142,7 +147,7 @@ Custom lightweight physics (no Matter.js) with immutable state + reducer pattern
 2. **Walking** — Horizontal movement with edge behavior (bounce/wrap/stop)
 3. **Random Walk AI** — Autonomous idle → walk → pause → walk cycle
 
-Physics only runs during the `fall` state. During `idle`/`walk`, movement is handled directly.
+Physics currently runs during the `fall` state for gravity simulation. The walking and random AI subsystems are implemented in the engine but not yet wired to the state machine's idle/walk transitions.
 
 ### Click-Through Mechanism
 
@@ -150,8 +155,8 @@ Pet windows are transparent and click-through by default:
 
 1. Window starts with `setIgnoreMouseEvents(true, { forward: true })`
 2. Renderer's `InputHandler` does pixel-level hit testing via PixiJS
-3. Mouse over pet pixels → `setInteractive(false)` to capture events
-4. Mouse leaves pet → restore click-through
+3. Mouse over pet pixels → `setInteractive(true)` → `setIgnoreMouseEvents(false)` to capture events
+4. Mouse leaves pet → `setInteractive(false)` → restore click-through
 
 ### Render Adapter Pattern
 
@@ -274,8 +279,12 @@ src/
 │   └── index.ts              # contextBridge → window.electronAPI
 ├── renderer/
 │   ├── index.html            # 桌宠窗口入口
+│   ├── public/
+│   │   └── live2dcubismcore.min.js  # Live2D Cubism SDK 运行时
+│   ├── styles/main.css       # 桌宠窗口 CSS
 │   ├── src/
 │   │   ├── main.ts           # 渲染进程初始化，连接所有子系统
+│   │   ├── styles/main.css   # 桌宠窗口详细 CSS
 │   │   ├── engine/
 │   │   │   ├── render-engine.ts  # PixiJS Application 门面
 │   │   │   ├── adapter.ts        # RenderAdapter 接口 + 工厂
@@ -288,6 +297,7 @@ src/
 │   └── config/
 │       ├── index.html        # 配置窗口入口
 │       ├── main.ts           # ConfigApp：侧边栏 + 标签页
+│       ├── styles/config.css # 配置窗口设计系统
 │       └── components/
 │           ├── PetListPanel.ts
 │           ├── SettingsPanel.ts
@@ -359,7 +369,7 @@ idle ──timeout──→ walk ──edge──→ idle
 2. **行走** — 水平移动，支持边缘行为（反弹/穿越/停止）
 3. **随机行走 AI** — 自主 idle → walk → pause → walk 循环
 
-物理引擎仅在 `fall` 状态运行。`idle`/`walk` 状态下的移动由逻辑直接控制。
+物理引擎目前仅在 `fall` 状态下运行为重力模拟。行走和随机 AI 子系统已在引擎中实现，但尚未接入状态机的 idle/walk 转换。
 
 ### 点击穿透机制
 
@@ -367,8 +377,8 @@ idle ──timeout──→ walk ──edge──→ idle
 
 1. 窗口启动时设置 `setIgnoreMouseEvents(true, { forward: true })`
 2. 渲染进程的 `InputHandler` 通过 PixiJS 进行像素级命中检测
-3. 鼠标在桌宠像素上 → `setInteractive(false)` 捕获事件
-4. 鼠标离开桌宠 → 恢复点击穿透
+3. 鼠标在桌宠像素上 → `setInteractive(true)` → `setIgnoreMouseEvents(false)` 捕获事件
+4. 鼠标离开桌宠 → `setInteractive(false)` → 恢复点击穿透
 
 ### 渲染适配器模式
 
