@@ -39,6 +39,27 @@ export function registerAllIpcHandlers(deps: IpcHandlerDeps): void {
     }
   })
 
+  // ---- minimize-pet -- 最小化桌宠窗口 ----
+  ipcMain.on(IPC_CHANNELS.MINIMIZE_PET, (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (win && !win.isDestroyed()) {
+      win.minimize()
+    }
+  })
+
+  // ---- close-pet -- 关闭桌宠窗口 ----
+  ipcMain.on(IPC_CHANNELS.CLOSE_PET, (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (win && !win.isDestroyed()) {
+      const petId = petWindowManager.getPetIdByWindow(win)
+      if (petId) {
+        petWindowManager.destroyPetWindow(petId)
+        configManager.removePet(petId)
+        notifyConfigChanged(petWindowManager, configManager.getConfig())
+      }
+    }
+  })
+
   // ---- open-config -- 打开配置窗口 ----
   ipcMain.handle(IPC_CHANNELS.OPEN_CONFIG, async (_event, petId?: string): Promise<void> => {
     await configWindowManager.show(petId)

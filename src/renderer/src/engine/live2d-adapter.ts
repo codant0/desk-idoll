@@ -10,6 +10,7 @@
 import { Container, Rectangle, Graphics, Text } from 'pixi.js'
 import { Live2DModel } from 'pixi-live2d-display/cubism4'
 import type { RenderAdapter, AdapterConfig, AnimationState } from './adapter'
+import { t } from '@shared/i18n'
 
 export class Live2DAdapter implements RenderAdapter {
   private container: Container | null = null
@@ -144,7 +145,7 @@ export class Live2DAdapter implements RenderAdapter {
     bg.drawRect(0, 0, config.width, config.height)
     bg.endFill()
 
-    const text = new Text('Live2D\n(加载失败)', {
+    const text = new Text(t('live2d.loadFailed'), {
       fontSize: 14,
       fill: 0xaaaacc,
       align: 'center'

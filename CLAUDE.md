@@ -73,7 +73,7 @@ Shared (src/shared/)
 
 **State machine drives behavior**: `StateMachine` (FSM) transitions between idle/walk/drag/fall/click. `InputHandler` detects raw input and emits events to the state machine. State machine callbacks trigger render state changes and physics actions.
 
-**Physics during fall only**: `PhysicsEngine` runs gravity simulation only when state is `'fall'`. The physics ticker moves the Electron window via IPC to follow the falling pet.
+**Physics during idle, walk, and fall**: `PhysicsEngine` runs during `idle`, `walk`, and `fall` states. During `fall`, gravity simulation moves the Electron window via IPC. During `idle` and `walk`, the random walk AI autonomously controls pet movement. User-configured behavior settings are synchronized to the physics engine in real-time.
 
 **Click-through with pixel hit testing**: Pet windows start with `setIgnoreMouseEvents(true, { forward: true })`. The renderer's `InputHandler` does pixel-level hit testing via PixiJS InteractionManager. When mouse is over pet pixels → `setInteractive(false)` to capture events; when mouse leaves → restore click-through.
 

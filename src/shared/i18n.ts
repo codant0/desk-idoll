@@ -90,6 +90,16 @@ const translations: Record<Locale, Record<string, string>> = {
 
     // 确认
     'config.confirmDelete': '确定要删除桌宠吗？',
+    'config.confirmDeletePet': '确定要删除桌宠 "{name}" 吗？',
+
+    // 更新状态
+    'config.checking': '检查中...',
+    'config.updateFoundVersion': '发现新版本 v{version}',
+    'config.upToDate': '已是最新版本',
+    'config.checkFailed': '检查失败',
+
+    // Live2D
+    'live2d.loadFailed': 'Live2D\n(加载失败)',
 
     // 通知
     'notify.welcome': 'Desk-Idoll 已启动',
@@ -188,6 +198,16 @@ const translations: Record<Locale, Record<string, string>> = {
 
     // Confirmations
     'config.confirmDelete': 'Are you sure you want to delete this pet?',
+    'config.confirmDeletePet': 'Are you sure you want to delete pet "{name}"?',
+
+    // Update status
+    'config.checking': 'Checking...',
+    'config.updateFoundVersion': 'Update available v{version}',
+    'config.upToDate': 'Up to date',
+    'config.checkFailed': 'Check failed',
+
+    // Live2D
+    'live2d.loadFailed': 'Live2D\n(Load failed)',
 
     // Notifications
     'notify.welcome': 'Desk-Idoll Started',

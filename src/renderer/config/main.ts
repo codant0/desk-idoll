@@ -167,7 +167,8 @@ class ConfigApp {
     const pet = this.config?.pets.find((p) => p.id === petId)
     if (!pet) return
 
-    if (!confirm(`确定要删除桌宠 "${pet.name}" 吗？`)) return
+    const confirmMsg = t('config.confirmDeletePet').replace('{name}', pet.name)
+    if (!confirm(confirmMsg)) return
 
     await window.electronAPI.deletePetConfig(petId)
     this.config = await window.electronAPI.getAppConfig()
@@ -273,19 +274,19 @@ class ConfigApp {
     const checkUpdatesBtn = dialog.querySelector('#gs-check-updates') as HTMLButtonElement
     const updateStatus = dialog.querySelector('#gs-update-status') as HTMLSpanElement
     checkUpdatesBtn?.addEventListener('click', async () => {
-      updateStatus.textContent = '检查中...'
+      updateStatus.textContent = t('config.checking')
       updateStatus.style.color = 'var(--text-muted)'
       try {
         const result = await window.electronAPI.checkForUpdates()
         if (result.hasUpdate) {
-          updateStatus.textContent = `发现新版本 v${result.version}`
+          updateStatus.textContent = t('config.updateFoundVersion').replace('{version}', result.version || '')
           updateStatus.style.color = 'var(--success)'
         } else {
-          updateStatus.textContent = '已是最新版本'
+          updateStatus.textContent = t('config.upToDate')
           updateStatus.style.color = 'var(--text-muted)'
         }
       } catch {
-        updateStatus.textContent = '检查失败'
+        updateStatus.textContent = t('config.checkFailed')
         updateStatus.style.color = 'var(--danger)'
       }
     })

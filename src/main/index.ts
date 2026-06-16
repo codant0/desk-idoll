@@ -100,12 +100,18 @@ if (!gotTheLock) {
         configWindowManager.show(petId)
       },
       onTogglePetVisibility: (petId: string) => {
-        const entry = petWindowManager.getWindow(petId)
-        if (entry) {
-          if (entry.isVisible()) {
-            entry.hide()
+        const petConfig = configManager.getPetConfig(petId)
+        if (!petConfig) return
+
+        const newEnabled = !petConfig.enabled
+        configManager.updatePetConfig(petId, { enabled: newEnabled })
+
+        const win = petWindowManager.getWindow(petId)
+        if (win && !win.isDestroyed()) {
+          if (newEnabled) {
+            win.show()
           } else {
-            entry.show()
+            win.hide()
           }
         }
       },
@@ -114,10 +120,15 @@ if (!gotTheLock) {
         configManager.removePet(petId)
       },
       onToggleAllVisibility: () => {
-        // Toggle based on current state
         const pets = configManager.getPets()
         const allHidden = pets.length > 0 && pets.every(p => !p.enabled)
-        if (allHidden) {
+        const newEnabled = allHidden // If all hidden, show all; otherwise hide all
+
+        for (const pet of pets) {
+          configManager.updatePetConfig(pet.id, { enabled: newEnabled })
+        }
+
+        if (newEnabled) {
           petWindowManager.showAll()
         } else {
           petWindowManager.hideAll()

@@ -52,7 +52,20 @@ async function initialize(): Promise<void> {
     onLanded: () => {
       stateMachine?.emit('landed')
     },
-    onEdgeReached: () => stateMachine?.emit('edge')
+    onEdgeReached: () => stateMachine?.emit('edge'),
+    onWalkingChanged: (isWalking) => {
+      if (isWalking) {
+        stateMachine?.emit('timeout') // idle -> walk
+      } else {
+        stateMachine?.emit('edge') // walk -> idle (using edge event to return to idle)
+      }
+    },
+    onDirectionChanged: (facing) => {
+      // Update render engine scale based on facing direction
+      if (renderEngine?.container) {
+        renderEngine.container.scale.x = facing === 'right' ? 1 : -1
+      }
+    }
   })
 
   // 5. Init input handler
@@ -64,29 +77,71 @@ async function initialize(): Promise<void> {
     }
   }
 
-  // 6. Load default pet
+  // 6. Load default pet and sync config
   try {
-    await renderEngine.loadAdapter('sprite-sheet', {
-      modelPath: './assets/default-pet/spritesheet.json',
-      width: petWidth,
-      height: petHeight,
-      fps: 12,
-      initialState: 'idle'
-    })
+    // Try to load config from main process
+    const appConfig = await window.electronAPI?.getAppConfig().catch(() => null)
+    const petConfig = appConfig?.pets?.[0]
+
+    if (petConfig) {
+      // Use config from main process
+      currentPetId = petConfig.id
+      const fps = 'fps' in petConfig.animations ? petConfig.animations.fps : 12
+      await renderEngine.loadAdapter(petConfig.modelType, {
+        modelPath: petConfig.modelPath,
+        width: petConfig.size.width,
+        height: petConfig.size.height,
+        fps,
+        initialState: 'idle'
+      })
+      petWidth = petConfig.size.width
+      petHeight = petConfig.size.height
+
+      // Sync physics engine config with user settings
+      if (physicsEngine) {
+        physicsEngine.setPetSize(petWidth, petHeight)
+        physicsEngine.updateConfig({
+          walkSpeed: petConfig.behavior.walkSpeed,
+          gravity: petConfig.behavior.gravityForce,
+          screenEdgeBehavior: petConfig.behavior.screenEdgeBehavior,
+          idleTimeout: petConfig.behavior.idleTimeout,
+          randomWalk: petConfig.behavior.randomWalk
+        })
+      }
+    } else {
+      // Fallback to default pet
+      await renderEngine.loadAdapter('sprite-sheet', {
+        modelPath: './assets/default-pet/spritesheet.json',
+        width: petWidth,
+        height: petHeight,
+        fps: 12,
+        initialState: 'idle'
+      })
+    }
     stateMachine.forceState('idle')
   } catch (error) {
     console.error('[main] Failed to load default pet:', error)
   }
 
-  // 7. Physics update loop -- only runs during fall state
+  // 7. Physics update loop -- runs during idle, walk, and fall states
   if (renderEngine.pixiApp) {
     renderEngine.pixiApp.ticker.add(() => {
       if (!physicsEngine || !stateMachine) return
-      if (stateMachine.getCurrentState() === 'fall') {
+      const state = stateMachine.getCurrentState()
+
+      // Run physics during fall (gravity), idle and walk (random walk AI)
+      if (state === 'fall' || state === 'idle' || state === 'walk') {
         physicsEngine.update(renderEngine!.pixiApp!.ticker)
         const pos = physicsEngine.getPosition()
-        // Move the Electron window to follow physics
-        window.electronAPI?.moveWindow(pos.x, pos.y)
+
+        if (state === 'fall') {
+          // Move the Electron window to follow physics during fall
+          window.electronAPI?.moveWindow(pos.x, pos.y)
+        } else if (state === 'walk') {
+          // Move window horizontally during walk
+          const currentY = window.screenY ?? window.screenTop ?? 0
+          window.electronAPI?.moveWindow(pos.x, currentY)
+        }
       }
     })
   }
@@ -102,9 +157,15 @@ function setupStateMachineCallbacks(): void {
 
   stateMachine.onEnter('idle', () => {
     renderEngine?.setState('idle')
+    // Physics engine will automatically start random walk AI when on ground
   })
   stateMachine.onEnter('walk', () => {
     renderEngine?.setState('walk')
+    // Ensure physics engine is in walking state
+    if (physicsEngine && !physicsEngine.getIsWalking()) {
+      const facing = physicsEngine.getFacing()
+      physicsEngine.walk(facing)
+    }
   })
   stateMachine.onEnter('drag', () => {
     renderEngine?.setState('drag')
@@ -186,6 +247,18 @@ function registerIPCListeners(): void {
       petWidth = petConfig.size.width
       petHeight = petConfig.size.height
       physicsEngine?.setPetSize(petWidth, petHeight)
+
+      // Sync physics engine config with user settings
+      if (physicsEngine) {
+        physicsEngine.updateConfig({
+          walkSpeed: petConfig.behavior.walkSpeed,
+          gravity: petConfig.behavior.gravityForce,
+          screenEdgeBehavior: petConfig.behavior.screenEdgeBehavior,
+          idleTimeout: petConfig.behavior.idleTimeout,
+          randomWalk: petConfig.behavior.randomWalk
+        })
+      }
+
       if (inputHandler && renderEngine.container) {
         inputHandler.setPetContainer(renderEngine.container)
       }
