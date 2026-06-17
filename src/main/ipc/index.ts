@@ -1,5 +1,6 @@
 // src/main/ipc/index.ts
 
+import path from 'node:path'
 import { app, ipcMain, BrowserWindow, dialog, Menu } from 'electron'
 import { IPC_CHANNELS } from '../../shared/ipc-channels'
 import { PetWindowManager } from '../windows/pet-window'
@@ -9,6 +10,23 @@ import { ActionExecutor } from '../services/action-executor'
 import { UpdaterManager } from '../services/updater'
 import { t } from '../../shared/i18n'
 import type { PetAction, PetConfig, AppConfig, ActionResult } from '../../shared/types'
+
+/**
+ * 将桌宠配置中的 modelPath 解析为绝对路径
+ * 开发模式下：保持相对路径（renderer 通过 Vite dev server 加载 public/ 目录）
+ * 生产模式下：解析为 process.resourcesPath 下的绝对路径
+ */
+function resolveModelPath(config: PetConfig): PetConfig {
+  if (path.isAbsolute(config.modelPath)) return config
+
+  // dev 模式下保持相对路径，由 Vite dev server 从 public/ 目录提供
+  if (!app.isPackaged) return config
+
+  return {
+    ...config,
+    modelPath: path.join(process.resourcesPath, config.modelPath)
+  }
+}
 
 /**
  * IPC 处理器所需的依赖接口
@@ -189,14 +207,19 @@ export function registerAllIpcHandlers(deps: IpcHandlerDeps): void {
 
   // ---- get-app-config -- 获取完整配置 ----
   ipcMain.handle(IPC_CHANNELS.GET_APP_CONFIG, async (): Promise<AppConfig> => {
-    return configManager.getConfig()
+    const config = configManager.getConfig()
+    return {
+      ...config,
+      pets: config.pets.map(resolveModelPath)
+    }
   })
 
   // ---- get-pet-config -- 获取单个桌宠配置 ----
   ipcMain.handle(
     IPC_CHANNELS.GET_PET_CONFIG,
     async (_event, petId: string): Promise<PetConfig | undefined> => {
-      return configManager.getPetConfig(petId)
+      const pet = configManager.getPetConfig(petId)
+      return pet ? resolveModelPath(pet) : undefined
     }
   )
 
@@ -402,13 +425,17 @@ export function registerAllIpcHandlers(deps: IpcHandlerDeps): void {
  * TODO: Optimization — send only the diff or the changed pet config instead of the full AppConfig to reduce IPC overhead
  */
 function notifyConfigChanged(manager: PetWindowManager, config: AppConfig): void {
+  const resolvedConfig = {
+    ...config,
+    pets: config.pets.map(resolveModelPath)
+  }
   for (const petId of manager.getAllPetIds()) {
     const win = manager.getWindow(petId)
     if (win && !win.isDestroyed()) {
-      win.webContents.send(IPC_CHANNELS.CONFIG_UPDATE, config)
+      win.webContents.send(IPC_CHANNELS.CONFIG_UPDATE, resolvedConfig)
       win.webContents.send(IPC_CHANNELS.CONFIG_CHANGED, {
         key: 'pets',
-        value: config.pets
+        value: resolvedConfig.pets
       })
     }
   }

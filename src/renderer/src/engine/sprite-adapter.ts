@@ -84,6 +84,10 @@ export class SpriteAdapter implements RenderAdapter {
     // Return type is Spritesheet.
     try {
       this.modelPath = config.modelPath
+      // dev 模式下 Vite 从根路径提供 public/ 文件，需要设置 baseUrl 使相对路径正确解析
+      if (!config.modelPath.match(/^[A-Z]:\\/i) && !config.modelPath.startsWith('/')) {
+        Loader.shared.baseUrl = location.origin + '/'
+      }
       this.spritesheet = await this.loadSpritesheet(config.modelPath)
     } catch (error) {
       throw new Error(
@@ -301,14 +305,16 @@ export class SpriteAdapter implements RenderAdapter {
         return
       }
 
+      let errorBinding: any = null
       const errorHandler = (err: unknown) => {
-        Loader.shared.onError.remove(errorHandler)
         reject(err)
       }
-      Loader.shared.onError.add(errorHandler)
+      errorBinding = Loader.shared.onError.add(errorHandler)
 
       Loader.shared.add(path).load((_loader, resources) => {
-        Loader.shared.onError.remove(errorHandler)
+        if (errorBinding) {
+          Loader.shared.onError.detach(errorBinding)
+        }
         const resource = resources[path]
         if (!resource) {
           reject(new Error(`Resource not found: ${path}`))

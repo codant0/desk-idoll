@@ -18,10 +18,11 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "@pixi/unsafe-eval": "^6.5.10",
     "electron-store": "^8.2.0",
     "electron-updater": "^6.3.0",
-    "pixi.js": "6.5.10",
-    "pixi-live2d-display": "0.4.0"
+    "pixi-live2d-display": "0.4.0",
+    "pixi.js": "6.5.10"
   },
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.0",
