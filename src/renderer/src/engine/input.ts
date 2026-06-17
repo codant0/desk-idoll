@@ -117,6 +117,7 @@ export class InputHandler {
    */
   private canvasMouseMoveHandler: ((e: MouseEvent) => void) | null = null
   private canvasMouseLeaveHandler: (() => void) | null = null
+  private lastHitTestTime = 0
 
   /**
    * 创建 InputHandler 实例。
@@ -139,10 +140,6 @@ export class InputHandler {
     this.boundOnWindowBlur = this.onWindowBlur.bind(this)
 
     this.attachListeners()
-
-    if (this.options.debug) {
-      console.log('[InputHandler] Initialized', this.options)
-    }
   }
 
   // ─────────────────────────────────────────
@@ -256,10 +253,13 @@ export class InputHandler {
    * 如果鼠标离开桌宠像素 -> IPC setInteractive(false) 恢复穿透
    */
   private attachCanvasHitTestListener(): void {
-    const canvas = this.app.view as HTMLCanvasElement
-
+    // 穿透模式下 forwarded mousemove 事件发送到 document，不是 canvas
+    // ponytail: throttle hitTest to ~30ms intervals (pixel hitTest is expensive)
     this.canvasMouseMoveHandler = (e: MouseEvent) => {
       if (this.destroyed) return
+      const now = performance.now()
+      if (now - this.lastHitTestTime < 30) return
+      this.lastHitTestTime = now
       this.hitTestAtClientPosition(e.clientX, e.clientY)
     }
 
@@ -271,22 +271,20 @@ export class InputHandler {
       }
     }
 
-    canvas.addEventListener('mousemove', this.canvasMouseMoveHandler)
-    canvas.addEventListener('mouseleave', this.canvasMouseLeaveHandler)
+    document.addEventListener('mousemove', this.canvasMouseMoveHandler)
+    document.addEventListener('mouseleave', this.canvasMouseLeaveHandler)
   }
 
   /**
    * 移除 canvas 级别的监听器。
    */
   private detachCanvasHitTestListener(): void {
-    const canvas = this.app.view as HTMLCanvasElement
-
     if (this.canvasMouseMoveHandler) {
-      canvas.removeEventListener('mousemove', this.canvasMouseMoveHandler)
+      document.removeEventListener('mousemove', this.canvasMouseMoveHandler)
       this.canvasMouseMoveHandler = null
     }
     if (this.canvasMouseLeaveHandler) {
-      canvas.removeEventListener('mouseleave', this.canvasMouseLeaveHandler)
+      document.removeEventListener('mouseleave', this.canvasMouseLeaveHandler)
       this.canvasMouseLeaveHandler = null
     }
   }
@@ -301,10 +299,11 @@ export class InputHandler {
   private hitTestAtClientPosition(clientX: number, clientY: number): void {
     if (!this.petContainer) return
 
-    // 将客户端坐标转换为 PixiJS 世界坐标
+    // 将客户端坐标转换为 PixiJS 内部坐标（需要乘以 resolution）
     const rect = (this.app.view as HTMLCanvasElement).getBoundingClientRect()
-    const localX = clientX - rect.left
-    const localY = clientY - rect.top
+    const resolution = this.app.renderer.resolution
+    const localX = (clientX - rect.left) * resolution
+    const localY = (clientY - rect.top) * resolution
 
     // v6: 使用 InteractionManager 的 hitTest
     const interactionManager = this.app.renderer.plugins.interaction as PIXI.interaction.InteractionManager
@@ -348,9 +347,6 @@ export class InputHandler {
    * 通过 IPC 通知主进程切换窗口的鼠标穿透状态。
    */
   private setInteractive(flag: boolean): void {
-    if (this.options.debug) {
-      console.log(`[InputHandler] set-interactive: ${flag}`)
-    }
     window.electronAPI.setInteractive(flag)
   }
 

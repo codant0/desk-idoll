@@ -20,8 +20,26 @@ export class PetWindowManager {
   /** 配置管理器引用 */
   private configManager: ConfigManager
 
+  // ponytail: cached display bounds, refresh on display-change event
+  private cachedDisplayBounds = { minX: 0, minY: 0, maxX: 1920, maxY: 1080 }
+
   constructor(configManager: ConfigManager) {
     this.configManager = configManager
+    this.refreshDisplayBounds()
+    screen.on('display-metrics-changed', () => this.refreshDisplayBounds())
+  }
+
+  private refreshDisplayBounds(): void {
+    const displays = screen.getAllDisplays()
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    for (const d of displays) {
+      const { x, y, width, height } = d.bounds
+      minX = Math.min(minX, x)
+      minY = Math.min(minY, y)
+      maxX = Math.max(maxX, x + width)
+      maxY = Math.max(maxY, y + height)
+    }
+    this.cachedDisplayBounds = { minX, minY, maxX, maxY }
   }
 
   // ============================================================
@@ -182,26 +200,18 @@ export class PetWindowManager {
     const entry = this.windows.get(petId)
     if (!entry) return
 
+    // 丢弃无效坐标
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return
+
     // 获取窗口当前尺寸
     const [width, height] = entry.window.getSize()
 
-    // 获取所有显示器的边界，限制窗口在可见范围内
-    const displays = screen.getAllDisplays()
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity
-    for (const display of displays) {
-      const { x: dx, y: dy, width: dw, height: dh } = display.bounds
-      minX = Math.min(minX, dx)
-      minY = Math.min(minY, dy)
-      maxX = Math.max(maxX, dx + dw)
-      maxY = Math.max(maxY, dy + dh)
-    }
+    // 使用缓存的显示器边界（避免每帧调用 screen.getAllDisplays）
+    const { minX, minY, maxX, maxY } = this.cachedDisplayBounds
 
-    // 限制坐标在屏幕范围内
-    const clampedX = Math.max(minX, Math.min(x, maxX - width))
-    const clampedY = Math.max(minY, Math.min(y, maxY - height))
+    // 限制坐标在屏幕范围内，转为整数（setPosition 要求整数参数）
+    const clampedX = Math.round(Math.max(minX, Math.min(x, maxX - width)))
+    const clampedY = Math.round(Math.max(minY, Math.min(y, maxY - height)))
 
     entry.window.setPosition(clampedX, clampedY)
   }

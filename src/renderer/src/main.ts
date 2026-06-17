@@ -40,6 +40,7 @@ async function initialize(): Promise<void> {
     backgroundAlpha: 0,
     antialias: true
   })
+  console.log('[main] RenderEngine initialized')
 
   // 3. Init state machine
   stateMachine = new StateMachine('idle')
@@ -125,6 +126,9 @@ async function initialize(): Promise<void> {
 
   // 7. Physics update loop -- runs during idle, walk, and fall states
   if (renderEngine.pixiApp) {
+    let lastMoveTime = 0
+    const MOVE_INTERVAL = 33 // ~30fps for IPC window moves (ponytail: enough for smooth desktop pet, saves 50% IPC)
+
     renderEngine.pixiApp.ticker.add(() => {
       if (!physicsEngine || !stateMachine) return
       const state = stateMachine.getCurrentState()
@@ -134,13 +138,16 @@ async function initialize(): Promise<void> {
         physicsEngine.update(renderEngine!.pixiApp!.ticker)
         const pos = physicsEngine.getPosition()
 
-        if (state === 'fall') {
-          // Move the Electron window to follow physics during fall
-          window.electronAPI?.moveWindow(pos.x, pos.y)
-        } else if (state === 'walk') {
-          // Move window horizontally during walk
-          const currentY = window.screenY ?? window.screenTop ?? 0
-          window.electronAPI?.moveWindow(pos.x, currentY)
+        // Throttle window movement IPC to avoid flooding main process
+        const now = performance.now()
+        if (now - lastMoveTime >= MOVE_INTERVAL) {
+          lastMoveTime = now
+          if (state === 'fall') {
+            window.electronAPI?.moveWindow(pos.x, pos.y)
+          } else if (state === 'walk') {
+            const currentY = window.screenY ?? window.screenTop ?? 0
+            window.electronAPI?.moveWindow(pos.x, currentY)
+          }
         }
       }
     })
