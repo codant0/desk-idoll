@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Desk-Idoll is a Windows desktop pet (shimeji-style) application built with Electron 33 + PixiJS 6 + TypeScript. Animated characters live on transparent, frameless, always-on-top windows that float over the desktop. Supports Sprite Sheet animations and Live2D Cubism models.
+Desk-Idoll is a Windows desktop pet (shimeji-style) application built with Electron 33 + PixiJS 6 + TypeScript. Animated characters live on transparent, frameless, always-on-top windows that float over the desktop. Supports Sprite Sheet animations, Live2D Cubism models, and static image pets with programmatic animation.
 
 ## Commands
 
@@ -33,6 +33,9 @@ Main Process (src/main/)
   └── services/
       ├── config-manager.ts     — electron-store persistence, CRUD for pets/global settings
       ├── action-executor.ts    — Executes pet actions (open-url, execute-cmd, show-message)
+      ├── static-animation-service.ts — Image validation and asset management
+      ├── animated-drawings-service.ts — Python service integration for AI animation
+      ├── spritesheet-generator.ts — Spritesheet generation from single images
       ├── tray.ts               — System tray icon + context menu
       ├── updater.ts            — electron-updater integration
       └── logger.ts             — Daily rotating file logger
@@ -47,6 +50,7 @@ Renderer — Pet Window (src/renderer/)
   │   ├── adapter.ts            — RenderAdapter interface + createAdapter() factory (lazy import)
   │   ├── sprite-adapter.ts     — PixiJS Spritesheet + AnimatedSprite
   │   ├── live2d-adapter.ts     — pixi-live2d-display + Live2DModel
+  │   ├── static-adapter.ts     — Programmatic animation for static images
   │   ├── physics.ts            — Immutable-state physics (gravity, walking, random AI)
   │   └── input.ts              — Mouse interaction (drag vs click, pixel-level hit test, click-through)
   └── src/state/
@@ -65,11 +69,17 @@ Shared (src/shared/)
   ├── ipc-channels.ts           — IPC channel names + ElectronAPI interface
   ├── i18n.ts                   — zh-CN / en translations (~100 keys)
   └── utils.ts                  — randomUUID()
+
+External Services (services/)
+  └── animated-drawings/
+      ├── server.py             — Flask REST API for AI animation processing
+      ├── requirements.txt      — Python dependencies
+      └── start.bat / start.sh  — Service startup scripts
 ```
 
 ## Key Patterns
 
-**Adapter/Strategy for rendering**: `RenderEngine` delegates to a `RenderAdapter` (Sprite or Live2D). The factory `createAdapter()` uses dynamic `import()` for lazy loading. Adapters can be swapped at runtime.
+**Adapter/Strategy for rendering**: `RenderEngine` delegates to a `RenderAdapter` (Sprite, Live2D, or Static). The factory `createAdapter()` uses dynamic `import()` for lazy loading. Adapters can be swapped at runtime. The `StaticAdapter` provides programmatic animation (floating, breathing, bouncing) for single static images without requiring pre-made sprite sheets.
 
 **State machine drives behavior**: `StateMachine` (FSM) transitions between idle/walk/drag/fall/click. `InputHandler` detects raw input and emits events to the state machine. State machine callbacks trigger render state changes and physics actions.
 
@@ -82,6 +92,82 @@ Shared (src/shared/)
 **Config change propagation**: `ConfigManager.notifyChange()` → tray refresh. IPC `config:changed` + `pet:config-update` → all pet renderers re-load their adapter with updated config. Each pet renderer identifies itself via `currentPetId` to find its own config in the full `AppConfig`.
 
 **Hide-on-close for config window**: `ConfigWindowManager` intercepts close events and hides instead of destroying. `markAppQuitting()` allows real close during app exit.
+
+## Static Image Pet Customization
+
+### Architecture Overview
+
+```
+User uploads image
+      |
++-----------------------------------------+
+|           Mode Selection                |
++-----------------+-----------------------+
+|   Simple Mode   |     Advanced Mode     |
+|   (Instant)     |     (AI Processing)   |
++-----------------+-----------------------+
+| StaticAdapter   | AnimatedDrawingsService|
+| Programmatic    | Python Flask service   |
+| animation       |                        |
++-----------------+-----------------------+
+```
+
+### New Files
+
+```
+src/main/services/
+├── static-animation-service.ts    # Image validation and asset management
+├── animated-drawings-service.ts   # Python service integration
+└── spritesheet-generator.ts       # Spritesheet generation
+
+src/renderer/src/engine/
+└── static-adapter.ts              # Programmatic animation adapter
+
+services/animated-drawings/
+├── server.py                      # Flask REST API
+├── requirements.txt               # Python dependencies
+└── start.bat / start.sh           # Service startup scripts
+```
+
+### Type Definitions
+
+```typescript
+// Static image animation configuration
+interface StaticImageAnimationConfig {
+  imagePath: string
+  animationStyle: 'gentle' | 'bouncy' | 'energetic'
+  idleAmplitude: number      // 0-50
+  idleFrequency: number      // 0.5-5
+  breatheScale: number       // 0-0.2
+  walkBobHeight: number      // 0-30
+  walkBobFrequency: number   // 1-10
+  swayAngle: number          // 0-30 degrees
+  fallRotationSpeed: number  // 0-10
+  clickScalePulse: number    // 0-0.5
+}
+```
+
+### IPC Channels
+
+New channels defined in `src/shared/ipc-channels.ts`:
+- `STATIC_VALIDATE_IMAGE` — Validate image file
+- `STATIC_COPY_IMAGE` — Copy image to assets directory
+- `ANIMATED_DRAWINGS_CHECK` — Check AI service status
+- `ANIMATED_DRAWINGS_START` — Start AI service
+- `ANIMATED_DRAWINGS_PROCESS` — Process image to generate animation
+- `ANIMATED_DRAWINGS_STATUS` — Query processing status
+- `SPRITESHEET_GENERATE` — Generate spritesheet
+
+### Service Lifecycle
+
+Services are initialized and cleaned up in `src/main/ipc/index.ts`:
+```typescript
+// Called during app.whenReady()
+initServices()    // Creates StaticAnimationService, AnimatedDrawingsService, SpritesheetGenerator
+
+// Called during app.on('before-quit')
+cleanupServices() // Stops AnimatedDrawings Python service, cleans up temp files
+```
 
 ## Build Configuration
 

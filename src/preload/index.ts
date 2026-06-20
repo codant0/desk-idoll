@@ -267,6 +267,94 @@ const electronAPI = {
   },
 
   // ============================================================
+  // 静态图片桌宠
+  // ============================================================
+
+  /**
+   * 验证图片文件是否有效
+   * @param filePath 图片路径
+   * @returns 验证结果，valid=false 时包含错误原因
+   */
+  validateImage: (filePath: string): Promise<{ valid: boolean; error?: string }> => {
+    return ipcRenderer.invoke(IPC_CHANNELS.STATIC_VALIDATE_IMAGE, filePath)
+  },
+
+  /**
+   * 复制图片到应用资源目录
+   * @param filePath 源图片路径
+   * @param petId 关联的桌宠 ID
+   * @returns 复制后的文件路径
+   */
+  copyImageToAssets: (filePath: string, petId: string): Promise<string> => {
+    return ipcRenderer.invoke(IPC_CHANNELS.STATIC_COPY_IMAGE, filePath, petId)
+  },
+
+  // ============================================================
+  // AnimatedDrawings AI 处理
+  // ============================================================
+
+  /**
+   * 检查 AnimatedDrawings Python 服务是否可用
+   */
+  checkAnimatedDrawingsService: (): Promise<boolean> => {
+    return ipcRenderer.invoke(IPC_CHANNELS.ANIMATED_DRAWINGS_CHECK)
+  },
+
+  /**
+   * 启动 AnimatedDrawings Python 服务
+   */
+  startAnimatedDrawingsService: (): Promise<boolean> => {
+    return ipcRenderer.invoke(IPC_CHANNELS.ANIMATED_DRAWINGS_START)
+  },
+
+  /**
+   * 提交图片到 AnimatedDrawings 进行动画处理
+   * @param imagePath 图片路径
+   * @param animationStyle 动画风格
+   * @param outputSize 输出尺寸
+   * @returns 任务 ID
+   */
+  processWithAnimatedDrawings: (
+    imagePath: string,
+    animationStyle: string,
+    outputSize: { width: number; height: number }
+  ): Promise<string> => {
+    return ipcRenderer.invoke(
+      IPC_CHANNELS.ANIMATED_DRAWINGS_PROCESS,
+      imagePath,
+      animationStyle,
+      outputSize
+    )
+  },
+
+  /**
+   * 查询 AnimatedDrawings 处理任务状态
+   * @param taskId 任务 ID
+   */
+  getProcessingStatus: (taskId: string) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.ANIMATED_DRAWINGS_STATUS, taskId)
+  },
+
+  // ============================================================
+  // 精灵图生成
+  // ============================================================
+
+  /**
+   * 从单张图片生成 PixiJS 兼容的精灵图
+   * @param sourcePath 源图片路径
+   * @param frameCount 每个动画状态的帧数，默认 4
+   * @param frameSize 每帧尺寸，默认 128x128
+   * @returns 精灵图路径和 JSON 配置路径
+   */
+  generateSpritesheet: (
+    sourcePath: string,
+    frameCount?: number,
+    frameSize?: { width: number; height: number }
+  ): Promise<{ spritesheetPath: string; jsonPath: string }> => {
+    return ipcRenderer.invoke(IPC_CHANNELS.SPRITESHEET_GENERATE, sourcePath, frameCount, frameSize)
+  },
+
+  // ============================================================
   // 事件监听（主进程 → 渲染进程）
   // ============================================================
 

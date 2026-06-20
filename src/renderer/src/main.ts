@@ -93,7 +93,8 @@ async function initialize(): Promise<void> {
         width: petConfig.size.width,
         height: petConfig.size.height,
         fps,
-        initialState: 'idle'
+        initialState: 'idle',
+        animationConfig: petConfig.animations
       })
       petWidth = petConfig.size.width
       petHeight = petConfig.size.height
@@ -248,7 +249,8 @@ function registerIPCListeners(): void {
         width: petConfig.size.width,
         height: petConfig.size.height,
         fps,
-        initialState: stateMachine?.getCurrentState() ?? 'idle'
+        initialState: stateMachine?.getCurrentState() ?? 'idle',
+        animationConfig: petConfig.animations
       })
       document.body.style.opacity = String(petConfig.opacity)
       petWidth = petConfig.size.width

@@ -160,10 +160,12 @@ class ConfigApp {
   private selectPet(petId: string): void {
     this.currentPetId = petId
     this.currentTab = 'basic'
+    this.settingsPanel.clearPolling()
     this.render()
   }
 
   private async deletePet(petId: string): Promise<void> {
+    this.settingsPanel.clearPolling()
     const pet = this.config?.pets.find((p) => p.id === petId)
     if (!pet) return
 

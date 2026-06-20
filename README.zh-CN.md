@@ -10,12 +10,45 @@
 
 - **动态桌面宠物** — 角色在桌面上行走、下落、交互，基于物理引擎驱动
 - **Sprite Sheet & Live2D** — 支持 PixiJS 精灵表动画和 Live2D Cubism 模型
+- **静态图片桌宠** — 上传单张图片即可创建动态桌面宠物，支持程序化动画
 - **拖拽交互** — 鼠标拖拽桌宠，松手后受重力下落
 - **自定义动作** — 左键点击可绑定打开 URL、执行命令、显示消息
 - **多桌宠** — 同时运行多个桌宠，各自独立配置
 - **系统托盘** — 通过托盘图标控制：显示/隐藏、添加/删除、设置
 - **自动更新** — 通过 GitHub Releases 内置更新机制
 - **国际化** — 支持中文（zh-CN）和英文
+
+### 桌宠定制模式
+
+Desk-Idoll 支持三种桌宠定制模式：
+
+| 模式 | 输入要求 | 动画效果 | 适用场景 |
+|------|----------|----------|----------|
+| **Sprite Sheet** | 精灵图 JSON + PNG | 帧动画 | 专业动画师 |
+| **Live2D** | Live2D 模型文件 | 骨骼动画 | Live2D 用户 |
+| **静态图片** | 单张 PNG/JPG 图片 | 程序化动画 | 普通用户 |
+
+### 静态图片模式
+
+只需上传一张图片，即可创建动态桌宠！
+
+#### 简单模式（即时生效）
+- **温柔风格**：轻柔浮动，缓慢呼吸
+- **活泼风格**：活泼弹跳，节奏明快
+- **精力充沛风格**：精力充沛，动感十足
+
+#### 高级模式（AI处理）
+使用 Meta AnimatedDrawings 技术，从静态图片生成真实动画。
+需要 Python 环境和 AnimatedDrawings 服务。
+
+### 动画状态
+
+桌宠支持以下动画状态：
+- **idle**：闲置时的浮动/呼吸动画
+- **walk**：行走时的弹跳动画
+- **drag**：拖拽时的摇晃动画
+- **fall**：下落时的旋转动画
+- **click**：点击时的缩放反馈
 
 ## 快速开始
 
@@ -27,21 +60,23 @@
 ### 开发
 
 ```bash
-# 安装依赖
-npm install
-
-# 开发模式启动（热重载）
-npm run dev
-
-# 类型检查
-npm run typecheck
-
-# 生产构建
-npm run build
-
-# 打包为 Windows 安装程序
-npm run dist:win
+npm run dev              # 开发模式（热重载）
+npm run build            # 构建所有目标
+npm run typecheck        # 类型检查
+npm run dist:win         # 打包 Windows 安装程序
 ```
+
+### AnimatedDrawings 服务
+
+如需使用高级模式，需要启动 Python 服务：
+
+```bash
+cd services/animated-drawings
+pip install -r requirements.txt
+python server.py
+```
+
+服务默认运行在 `http://127.0.0.1:5000`
 
 ### 项目结构
 
@@ -169,7 +204,8 @@ idle ──timeout──→ walk ──edge──→ idle
 ```
 RenderAdapter（接口）
   ├── SpriteAdapter   — PixiJS Spritesheet + AnimatedSprite
-  └── Live2DAdapter   — pixi-live2d-display + Live2DModel
+  ├── Live2DAdapter   — pixi-live2d-display + Live2DModel
+  └── StaticAdapter   — 静态图片程序化动画
 ```
 
 适配器通过动态 `import()` 懒加载，支持运行时切换。
@@ -219,6 +255,20 @@ release/
   ├── Desk-Idoll-Setup-0.1.0.exe    # NSIS 安装程序
   └── Desk-Idoll-0.1.0-portable.exe  # 便携版
 ```
+
+## API 文档
+
+### IPC 通道
+
+| 通道 | 方向 | 说明 |
+|------|------|------|
+| `static:validate-image` | 渲染→主 | 验证图片文件 |
+| `static:copy-image` | 渲染→主 | 复制图片到资源目录 |
+| `animated-drawings:check-service` | 渲染→主 | 检查AI服务状态 |
+| `animated-drawings:start-service` | 渲染→主 | 启动AI服务 |
+| `animated-drawings:process` | 渲染→主 | 处理图片生成动画 |
+| `animated-drawings:status` | 渲染→主 | 查询处理状态 |
+| `spritesheet:generate` | 渲染→主 | 生成精灵图 |
 
 ## 许可证
 

@@ -7,6 +7,7 @@
  */
 
 import type * as PIXI from 'pixi.js'
+import type { AnimationConfig } from '@shared/types'
 
 // ============================================================
 // AnimationState - Pet behavior states
@@ -104,7 +105,7 @@ export interface RenderAdapter {
  * Configuration parameters for adapter initialization.
  */
 export interface AdapterConfig {
-  /** Model file path (sprite sheet JSON or .model3.json) */
+  /** Model file path (sprite sheet JSON, .model3.json, or image path) */
   modelPath: string
 
   /** Target render size (scale to fit) */
@@ -116,6 +117,9 @@ export interface AdapterConfig {
 
   /** Initial animation state */
   initialState?: AnimationState
+
+  /** Animation configuration (used by static-image adapter for procedural animation params) */
+  animationConfig?: AnimationConfig
 }
 
 // ============================================================
@@ -125,7 +129,7 @@ export interface AdapterConfig {
 /**
  * Adapter type enumeration.
  */
-export type AdapterType = 'sprite-sheet' | 'live2d'
+export type AdapterType = 'sprite-sheet' | 'live2d' | 'static-image'
 
 /**
  * Adapter factory function.
@@ -151,6 +155,10 @@ export async function createAdapter(type: AdapterType): Promise<RenderAdapter> {
     case 'live2d': {
       const { Live2DAdapter } = await import('./live2d-adapter')
       return new Live2DAdapter()
+    }
+    case 'static-image': {
+      const { StaticAdapter } = await import('./static-adapter')
+      return new StaticAdapter()
     }
     default: {
       const _exhaustive: never = type

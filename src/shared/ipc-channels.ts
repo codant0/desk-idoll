@@ -59,7 +59,20 @@ export const IPC_CHANNELS = {
   // 自动更新
   CHECK_FOR_UPDATES: 'system:check-for-updates',
   DOWNLOAD_UPDATE: 'system:download-update',
-  INSTALL_UPDATE: 'system:install-update'
+  INSTALL_UPDATE: 'system:install-update',
+
+  // 静态图片桌宠 (渲染进程 -> 主进程)
+  STATIC_VALIDATE_IMAGE: 'static:validate-image',
+  STATIC_COPY_IMAGE: 'static:copy-image',
+
+  // AnimatedDrawings AI 处理 (渲染进程 -> 主进程)
+  ANIMATED_DRAWINGS_CHECK: 'animated-drawings:check-service',
+  ANIMATED_DRAWINGS_START: 'animated-drawings:start-service',
+  ANIMATED_DRAWINGS_PROCESS: 'animated-drawings:process',
+  ANIMATED_DRAWINGS_STATUS: 'animated-drawings:status',
+
+  // 精灵图生成 (渲染进程 -> 主进程)
+  SPRITESHEET_GENERATE: 'spritesheet:generate'
 } as const
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]
@@ -109,6 +122,33 @@ export interface ElectronAPI {
   checkForUpdates: () => Promise<{ hasUpdate: boolean; version?: string }>
   downloadUpdate: () => Promise<void>
   installUpdate: () => void
+
+  // 静态图片桌宠
+  validateImage: (filePath: string) => Promise<{ valid: boolean; error?: string }>
+  copyImageToAssets: (filePath: string, petId: string) => Promise<string>
+
+  // AnimatedDrawings AI 处理
+  checkAnimatedDrawingsService: () => Promise<boolean>
+  startAnimatedDrawingsService: () => Promise<boolean>
+  processWithAnimatedDrawings: (
+    imagePath: string,
+    animationStyle: string,
+    outputSize: { width: number; height: number }
+  ) => Promise<string>
+  getProcessingStatus: (taskId: string) => Promise<{
+    taskId: string
+    status: 'processing' | 'completed' | 'error'
+    progress: number
+    result?: { spritesheetPath: string; jsonPath: string }
+    error?: string
+  }>
+
+  // 精灵图生成
+  generateSpritesheet: (
+    sourcePath: string,
+    frameCount?: number,
+    frameSize?: { width: number; height: number }
+  ) => Promise<{ spritesheetPath: string; jsonPath: string }>
 
   // 事件监听
   onPositionUpdate: (callback: (position: { x: number; y: number }) => void) => () => void

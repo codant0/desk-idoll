@@ -10,12 +10,45 @@
 
 - **Animated desktop pets** — Characters walk, fall, and interact on your desktop with physics-based movement
 - **Sprite Sheet & Live2D** — Supports PixiJS sprite sheet animations and Live2D Cubism models
+- **Static image pets** — Upload a single image to create an animated desktop pet with programmatic animation
 - **Drag & drop** — Grab pets with your mouse, toss them, and watch them fall with gravity
 - **Custom actions** — Bind left-click to open URLs, execute commands, or show messages
 - **Multi-pet** — Run multiple pets simultaneously, each with independent configuration
 - **System tray** — Control pets from the system tray: show/hide, add/remove, settings
 - **Auto-update** — Built-in update mechanism via GitHub Releases
 - **i18n** — Chinese (zh-CN) and English support
+
+### Pet Customization Modes
+
+Desk-Idoll supports three pet customization modes:
+
+| Mode | Input | Animation | Best For |
+|------|-------|-----------|----------|
+| **Sprite Sheet** | Sprite JSON + PNG | Frame animation | Professional animators |
+| **Live2D** | Live2D model files | Skeletal animation | Live2D users |
+| **Static Image** | Single PNG/JPG image | Programmatic animation | Everyone |
+
+### Static Image Mode
+
+Upload a single image and get a dynamic desktop pet instantly!
+
+#### Simple Mode (Instant)
+- **Gentle** — Soft floating, slow breathing
+- **Bouncy** — Lively bouncing, upbeat rhythm
+- **Energetic** — Dynamic movement, high energy
+
+#### Advanced Mode (AI-Powered)
+Uses Meta AnimatedDrawings technology to generate realistic animations from a static image.
+Requires a Python environment and the AnimatedDrawings service.
+
+### Animation States
+
+The pet supports the following animation states:
+- **idle** — Floating/breathing animation when idle
+- **walk** — Bouncing animation when walking
+- **drag** — Swaying animation when dragged
+- **fall** — Rotation animation when falling
+- **click** — Scale pulse feedback on click
 
 ## Quick Start
 
@@ -27,21 +60,23 @@
 ### Development
 
 ```bash
-# Install dependencies
-npm install
-
-# Start in development mode (hot reload)
-npm run dev
-
-# Type check
-npm run typecheck
-
-# Build for production
-npm run build
-
-# Package as Windows installer
-npm run dist:win
+npm run dev              # Development mode (hot reload)
+npm run build            # Build all targets
+npm run typecheck        # Type check
+npm run dist:win         # Package as Windows installer
 ```
+
+### AnimatedDrawings Service
+
+To use Advanced Mode, start the Python service:
+
+```bash
+cd services/animated-drawings
+pip install -r requirements.txt
+python server.py
+```
+
+The service runs at `http://127.0.0.1:5000` by default.
 
 ### Project Structure
 
@@ -161,7 +196,8 @@ Pet windows are transparent and click-through by default:
 ```
 RenderAdapter (interface)
   ├── SpriteAdapter   — PixiJS Spritesheet + AnimatedSprite
-  └── Live2DAdapter   — pixi-live2d-display + Live2DModel
+  ├── Live2DAdapter   — pixi-live2d-display + Live2DModel
+  └── StaticAdapter   — Programmatic animation for static images
 ```
 
 Adapters are loaded lazily via dynamic `import()` and can be swapped at runtime.
@@ -211,6 +247,20 @@ release/
   ├── Desk-Idoll-Setup-0.1.0.exe    # NSIS installer
   └── Desk-Idoll-0.1.0-portable.exe  # Portable version
 ```
+
+## API Reference
+
+### IPC Channels
+
+| Channel | Direction | Description |
+|---------|-----------|-------------|
+| `static:validate-image` | Renderer -> Main | Validate image file |
+| `static:copy-image` | Renderer -> Main | Copy image to assets directory |
+| `animated-drawings:check-service` | Renderer -> Main | Check AI service status |
+| `animated-drawings:start-service` | Renderer -> Main | Start AI service |
+| `animated-drawings:process` | Renderer -> Main | Process image to generate animation |
+| `animated-drawings:status` | Renderer -> Main | Query processing status |
+| `spritesheet:generate` | Renderer -> Main | Generate spritesheet |
 
 ## License
 

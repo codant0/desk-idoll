@@ -21,13 +21,16 @@
     "@pixi/unsafe-eval": "^6.5.10",
     "electron-store": "^8.2.0",
     "electron-updater": "^6.3.0",
+    "image-size": "^2.0.2",
     "pixi-live2d-display": "0.4.0",
-    "pixi.js": "6.5.10"
+    "pixi.js": "6.5.10",
+    "sharp": "^0.35.2"
   },
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.0",
     "@electron-toolkit/tsconfig": "^2.0.0",
     "@electron-toolkit/utils": "^4.0.0",
+    "@types/image-size": "^0.7.0",
     "electron": "^33.0.0",
     "electron-builder": "^25.1.0",
     "electron-vite": "^2.3.0",

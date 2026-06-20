@@ -7,7 +7,7 @@ import { ConfigManager } from './services/config-manager'
 import { ActionExecutor } from './services/action-executor'
 import { UpdaterManager } from './services/updater'
 import { TrayManager } from './services/tray'
-import { registerAllIpcHandlers } from './ipc/index'
+import { initServices, cleanupServices, registerAllIpcHandlers } from './ipc/index'
 import { logger } from './services/logger'
 import { setLocale, t } from '../shared/i18n'
 
@@ -141,7 +141,8 @@ if (!gotTheLock) {
       }
     })
 
-    // 3.4 注册所有 IPC 处理函数
+    // 3.4 初始化服务并注册所有 IPC 处理函数
+    initServices()
     registerAllIpcHandlers({
       petWindowManager,
       configWindowManager,
@@ -211,6 +212,8 @@ if (!gotTheLock) {
     if (petWindowManager) {
       petWindowManager.saveAllWindowPositions()
     }
+    // 清理服务资源（停止后台进程、删除临时文件）
+    cleanupServices()
     logger.dispose()
   })
 

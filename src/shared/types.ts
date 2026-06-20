@@ -32,15 +32,39 @@ export interface Live2DAnimationConfig {
   followMouse: boolean
 }
 
+// ── 静态图片动画配置 ─────────────────────────
+
+export interface StaticImageAnimationConfig {
+  imagePath: string
+  animationStyle: 'gentle' | 'bouncy' | 'energetic'
+  idleAmplitude: number      // 浮动幅度 (0-50)
+  idleFrequency: number      // 浮动频率 (0.5-5)
+  breatheScale: number       // 呼吸缩放幅度 (0-0.2)
+  walkBobHeight: number      // 行走弹跳高度 (0-30)
+  walkBobFrequency: number   // 行走弹跳频率 (1-10)
+  swayAngle: number          // 摇晃角度 (0-30度)
+  fallRotationSpeed: number  // 下落旋转速度 (0-10)
+  clickScalePulse: number    // 点击缩放脉冲 (0-0.5)
+}
+
+// ── 高级模式配置 ─────────────────────────────
+
+export interface AdvancedAnimationConfig {
+  enabled: boolean
+  spritesheetPath?: string
+  processingStatus: 'idle' | 'processing' | 'completed' | 'error'
+  errorMessage?: string
+}
+
 // ── 统一动画配置类型 ─────────────────────────
 
-export type AnimationConfig = SpriteAnimationConfig | Live2DAnimationConfig
+export type AnimationConfig = SpriteAnimationConfig | Live2DAnimationConfig | StaticImageAnimationConfig
 
 // ── 动画状态 ─────────────────────────────────
 
 export type AnimationState = 'idle' | 'walk' | 'drag' | 'fall' | 'click'
 
-export type ModelType = 'sprite-sheet' | 'live2d'
+export type ModelType = 'sprite-sheet' | 'live2d' | 'static-image'
 
 // ── 状态机事件 ───────────────────────────────
 

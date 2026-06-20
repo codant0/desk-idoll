@@ -26,3 +26,9 @@ src/assets/user-pets/
 *.p12
 *.key
 *.cert
+
+# AnimatedDrawings service runtime directories
+services/animated-drawings/uploads/
+services/animated-drawings/output/
+__pycache__/
+*.pyc

@@ -2,6 +2,7 @@ import type {
   PetConfig,
   BehaviorConfig,
   SpriteAnimationConfig,
+  StaticImageAnimationConfig,
   GlobalSettings
 } from './types'
 
@@ -64,7 +65,51 @@ export const DEFAULT_SPRITE_ANIMATION: SpriteAnimationConfig = {
   spritesheetJsonPath: 'default-pet/spritesheet.json'
 }
 
+// ── 默认静态图片动画配置 ─────────────────────
+
+export const DEFAULT_STATIC_ANIMATION: StaticImageAnimationConfig = {
+  imagePath: '',
+  animationStyle: 'gentle',
+  idleAmplitude: 15,
+  idleFrequency: 1.5,
+  breatheScale: 0.05,
+  walkBobHeight: 10,
+  walkBobFrequency: 4,
+  swayAngle: 5,
+  fallRotationSpeed: 3,
+  clickScalePulse: 0.2
+}
+
+// ── 动画预设 ─────────────────────────────────
+
+export const ANIMATION_PRESETS: Record<string, StaticImageAnimationConfig> = {
+  gentle: { ...DEFAULT_STATIC_ANIMATION, animationStyle: 'gentle' },
+  bouncy: {
+    ...DEFAULT_STATIC_ANIMATION,
+    animationStyle: 'bouncy',
+    idleAmplitude: 25,
+    idleFrequency: 2.5,
+    breatheScale: 0.08,
+    walkBobHeight: 20,
+    walkBobFrequency: 6
+  },
+  energetic: {
+    ...DEFAULT_STATIC_ANIMATION,
+    animationStyle: 'energetic',
+    idleAmplitude: 30,
+    idleFrequency: 3,
+    breatheScale: 0.1,
+    walkBobHeight: 25,
+    walkBobFrequency: 8,
+    swayAngle: 10,
+    fallRotationSpeed: 5,
+    clickScalePulse: 0.3
+  }
+}
+
 // ── 默认桌宠配置 ─────────────────────────────
+// 支持三种模型类型: 'sprite-sheet' | 'live2d' | 'static-image'
+// 静态图片模式下 modelPath 为图片路径，animations 使用 StaticImageAnimationConfig
 
 export const DEFAULT_PET_CONFIG: Omit<PetConfig, 'id' | 'createdAt' | 'updatedAt'> = {
   name: '新桌宠',

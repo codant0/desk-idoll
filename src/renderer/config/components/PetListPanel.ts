@@ -28,16 +28,20 @@ export class PetListPanel {
 
     container.innerHTML = pets
       .map(
-        (pet) => `
+        (pet) => {
+          const typeLabel = pet.modelType === 'live2d' ? 'Live2D' : pet.modelType === 'static-image' ? t('config.modelType.static') : 'Sprite Sheet'
+          const iconLabel = pet.modelType === 'live2d' ? 'L' : pet.modelType === 'static-image' ? 'I' : 'S'
+          return `
       <div class="pet-item ${pet.id === activePetId ? 'active' : ''}" data-pet-id="${pet.id}">
-        <div class="pet-icon">${pet.modelType === 'live2d' ? 'L' : 'S'}</div>
+        <div class="pet-icon">${iconLabel}</div>
         <div class="pet-info">
           <div class="pet-name">${this.escapeHtml(pet.name)}</div>
-          <div class="pet-type">${pet.modelType === 'live2d' ? 'Live2D' : 'Sprite Sheet'}</div>
+          <div class="pet-type">${typeLabel}</div>
         </div>
         <button class="pet-delete" data-pet-id="${pet.id}" title="${t('config.action.delete')}">×</button>
       </div>
     `
+        }
       )
       .join('')
 

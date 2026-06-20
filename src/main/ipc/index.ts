@@ -8,8 +8,50 @@ import { ConfigWindowManager } from '../windows/config-window'
 import { ConfigManager } from '../services/config-manager'
 import { ActionExecutor } from '../services/action-executor'
 import { UpdaterManager } from '../services/updater'
+import { StaticAnimationService } from '../services/static-animation-service'
+import { AnimatedDrawingsService } from '../services/animated-drawings-service'
+import { SpritesheetGenerator } from '../services/spritesheet-generator'
 import { t } from '../../shared/i18n'
 import type { PetAction, PetConfig, AppConfig, ActionResult } from '../../shared/types'
+
+// 服务实例（由 initServices 创建，供 IPC handler 使用）
+let staticAnimationService: StaticAnimationService
+let animatedDrawingsService: AnimatedDrawingsService
+let spritesheetGenerator: SpritesheetGenerator
+
+/**
+ * 初始化所有服务实例
+ *
+ * 必须在 registerAllIpcHandlers 之前调用。
+ */
+export function initServices(): void {
+  console.log('[IPC] Initializing services...')
+  staticAnimationService = new StaticAnimationService()
+  animatedDrawingsService = new AnimatedDrawingsService()
+  spritesheetGenerator = new SpritesheetGenerator()
+  console.log('[IPC] Services initialized')
+}
+
+/**
+ * 清理服务资源
+ *
+ * 应在应用退出前调用，确保后台进程和临时文件被正确清理。
+ */
+export async function cleanupServices(): Promise<void> {
+  console.log('[IPC] Cleaning up services...')
+
+  // 停止 AnimatedDrawings Python 服务
+  if (animatedDrawingsService) {
+    animatedDrawingsService.stopService()
+  }
+
+  // 清理生成的精灵图临时文件
+  if (spritesheetGenerator) {
+    await spritesheetGenerator.cleanup()
+  }
+
+  console.log('[IPC] Services cleaned up')
+}
 
 /**
  * 将桌宠配置中的 modelPath 解析为绝对路径
@@ -414,6 +456,78 @@ export function registerAllIpcHandlers(deps: IpcHandlerDeps): void {
   ipcMain.handle(IPC_CHANNELS.INSTALL_UPDATE, (): void => {
     updaterManager.quitAndInstall()
   })
+
+  // ============================================================
+  // 静态图片桌宠
+  // ============================================================
+
+  // ---- static:validate-image -- 验证图片文件 ----
+  ipcMain.handle(
+    IPC_CHANNELS.STATIC_VALIDATE_IMAGE,
+    async (_event, filePath: string) => {
+      return staticAnimationService.validateImage(filePath)
+    }
+  )
+
+  // ---- static:copy-image -- 复制图片到资源目录 ----
+  ipcMain.handle(
+    IPC_CHANNELS.STATIC_COPY_IMAGE,
+    async (_event, filePath: string, petId: string) => {
+      return staticAnimationService.copyImageToAssets(filePath, petId)
+    }
+  )
+
+  // ============================================================
+  // AnimatedDrawings AI 处理
+  // ============================================================
+
+  // ---- animated-drawings:check-service -- 检查服务是否可用 ----
+  ipcMain.handle(IPC_CHANNELS.ANIMATED_DRAWINGS_CHECK, async () => {
+    return animatedDrawingsService.checkServiceAvailability()
+  })
+
+  // ---- animated-drawings:start-service -- 启动 Python 服务 ----
+  ipcMain.handle(IPC_CHANNELS.ANIMATED_DRAWINGS_START, async () => {
+    return animatedDrawingsService.startService()
+  })
+
+  // ---- animated-drawings:process -- 提交图片处理任务 ----
+  ipcMain.handle(
+    IPC_CHANNELS.ANIMATED_DRAWINGS_PROCESS,
+    async (
+      _event,
+      imagePath: string,
+      animationStyle: string,
+      outputSize: { width: number; height: number }
+    ) => {
+      return animatedDrawingsService.processImage(imagePath, animationStyle, outputSize)
+    }
+  )
+
+  // ---- animated-drawings:status -- 查询任务状态 ----
+  ipcMain.handle(
+    IPC_CHANNELS.ANIMATED_DRAWINGS_STATUS,
+    async (_event, taskId: string) => {
+      return animatedDrawingsService.getTaskStatus(taskId)
+    }
+  )
+
+  // ============================================================
+  // 精灵图生成
+  // ============================================================
+
+  // ---- spritesheet:generate -- 从单张图片生成精灵图 ----
+  ipcMain.handle(
+    IPC_CHANNELS.SPRITESHEET_GENERATE,
+    async (
+      _event,
+      sourcePath: string,
+      frameCount?: number,
+      frameSize?: { width: number; height: number }
+    ) => {
+      return spritesheetGenerator.generateFromSingleImage(sourcePath, frameCount, frameSize)
+    }
+  )
 }
 
 // ============================================================
